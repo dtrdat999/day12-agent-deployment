@@ -36,3 +36,20 @@
 ### Exercise 3.1: Railway deployment
 - URL: [Bạn sẽ điền link vào đây sau khi deploy thành công]
 - Screenshot: [Bạn sẽ điền link ảnh chụp màn hình vào đây]
+
+## Part 4: API Security
+
+### Exercise 4.1-4.3: Test results
+- Thử nghiệm gọi API không truyền JWT/Key: [Thất bại - Báo lỗi 401 Unauthorized]
+- Thử nghiệm gọi API đúng Key: [Thành công - Trả về 200 OK và answer]
+- Thử nghiệm gọi quá giới hạn Rate Limiting (spam >10 req/min): [Thất bại - Báo lỗi 429 Too Many Requests]
+
+### Exercise 4.4: Cost guard implementation
+- Cơ chế bảo vệ chi phí hoạt động bằng cách: Giới hạn ngân sách hàng ngày (Ví dụ: $1/ngày). Mỗi khi gọi LLM, tính toán số token đầu vào/đầu ra, nhân với đơn giá (VD: $0.00015/1k token) rồi cộng dồn vào `_daily_cost`. Nếu vượt quá $1, hệ thống lập tức báo lỗi 503 Service Unavailable để tránh cạn kiệt tài khoản ngân hàng.
+
+## Part 5: Scaling & Reliability
+
+### Exercise 5.1-5.5: Implementation notes
+- Việc sử dụng `docker-compose.yml` giúp mở rộng số lượng Agent (VD: 2 replicas) đằng sau Load Balancer (Nginx) dễ dàng.
+- Để Agent A và Agent B đồng bộ với nhau (tránh spam hoặc tính sai cost), hệ thống cần chuyển `rate_limit` và `cost_guard` từ bộ nhớ RAM (In-memory) sang dùng chung một Redis. Redis đóng vai trò như bộ nhớ tập trung siêu tốc cho tất cả các bản sao Agent.
+- Tính năng Health Check và Graceful Shutdown đảm bảo khi hệ thống bị quá tải hoặc cần update, nó không ngắt ngang yêu cầu của khách hàng đang gọi dở, mà chờ xử lý xong mới tự động tắt.

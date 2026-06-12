@@ -1,7 +1,9 @@
 #  Delivery Checklist — Day 12 Lab Submission
 
 > **Student Name:** Đặng Trần Đạt 
+
 > **Student ID:** 2A202600662
+
 > **Date:** 12/06/2026
 
 ---
