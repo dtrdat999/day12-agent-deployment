@@ -131,8 +131,9 @@ railway variables set MONTHLY_BUDGET_USD=10.0
 railway up
 railway domain     # lấy public URL
 ```
-- **Public URL:** https://skillful-delight-production-b06b.up.railway.app/
-- Railway tự inject `$PORT`; `railway.toml` đã cấu hình `startCommand` đọc `$PORT` + `healthcheckPath=/health`.
+- **Public URL (đang chạy):** https://skillful-delight-production-b06b.up.railway.app/ — thực tế tôi deploy qua **GitHub** (push lên `main` → Railway tự build từ root `Dockerfile`), thay cho `railway up`.
+- **PORT:** Railway tự inject `$PORT`. App lắng nghe `0.0.0.0:$PORT` nhờ `CMD` trong Dockerfile: `sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} ..."`. `healthcheckPath=/health`, `healthcheckTimeout=300` khai báo trong `railway.toml`.
+- **🐞 Bài học gỡ lỗi thực tế (quan trọng):** ban đầu tôi đặt `startCommand` trong `railway.toml` là `uvicorn ... --port $PORT`. Railway chạy start command **KHÔNG qua shell** nên chuỗi `$PORT` **không được bung thành số** → uvicorn báo `Error: Invalid value for '--port': '$PORT' is not a valid integer` → app crash lặp lại → **healthcheck `/health` fail** → deploy FAILED. **Khắc phục:** **bỏ `startCommand`** để Railway dùng lại `CMD` của Dockerfile (đã bọc `sh -c` nên `${PORT:-8000}` bung đúng). Nguyên lý rút ra: **biến môi trường chỉ được expand bởi shell**; nếu runner không qua shell thì phải tự bọc `sh -c`.
 
 ### Exercise 3.2 — So sánh `render.yaml` vs `railway.toml`
 
@@ -145,7 +146,7 @@ railway domain     # lấy public URL
 | Health check | `healthcheckPath` | `healthCheckPath` |
 | Provision phụ thuộc | Thêm plugin riêng | Khai báo luôn Redis (`type: keyvalue`) trong cùng file |
 
-> **Insight:** `render.yaml` thiên về **Infrastructure-as-Code khai báo** (cả stack trong 1 file, gồm Redis); `railway.toml` tối giản, hợp prototyping nhanh qua CLI. Tôi chọn Render để có Redis miễn phí → chứng minh stateless thật trên cloud.
+> **Insight:** `render.yaml` thiên về **Infrastructure-as-Code khai báo** (cả stack trong 1 file, gồm Redis); `railway.toml` tối giản, hợp prototyping nhanh qua CLI/Git. **Tôi deploy thật lên Railway.** Bản cloud hiện chạy **in-memory store** với **1 worker** (đủ cho demo, và 1 worker là cấu hình ĐÚNG cho memory mode — xem ghi chú ở Part 5/6). Thiết kế đã sẵn sàng stateless: chỉ cần gắn Redis (đặt `REDIS_URL`) là chuyển sang state dùng chung cho nhiều worker/instance mà **không phải sửa code** (`store.py` tự nhận diện và fallback).
 
 ### Exercise 3.3 — (Optional) GCP Cloud Run CI/CD
 
@@ -228,7 +229,9 @@ signal.signal(signal.SIGTERM, _handle_sigterm)
 
 - **Anti-pattern:** `conversation_history = {}` trong RAM → khi scale 3 instance, mỗi instance có bộ nhớ riêng → user bị "mất trí nhớ" tùy instance nào nhận request.
 - **Đúng:** lưu history/rate-limit/cost ở **Redis** (key `history:{user_id}`, `rl:{user_id}`, `cost:{user_id}:{month}`). Mọi instance đọc cùng nguồn → state nhất quán.
-- **Đã chứng minh:** chạy thật với Redis, ghi `My name is Bob` ở 1 request, đọc lại history trực tiếp từ Redis ở "instance khác" và recall đúng "Bob".
+- **Đã chứng minh (local, có Redis):** `docker compose up --scale agent=3` với Redis dùng chung — ghi `My name is Bob` qua 1 instance, request sau (Nginx load-balance sang instance khác) vẫn recall đúng "Bob" vì history nằm ở Redis chứ không phải RAM.
+- **Trên bản cloud (Railway, in-memory, 1 worker):** conversation history vẫn hoạt động trong phạm vi 1 instance — đã test live: khai báo tên rồi hỏi lại "what is my name" → server trả đúng tên.
+- **🔎 Bằng chứng "stateless là bắt buộc khi scale" — gặp ngay trên production:** lúc đầu cloud chạy `--workers 2` + in-memory. Test 15 request liên tiếp **đều 200, KHÔNG có 429** vì 2 worker mỗi worker giữ bộ đếm rate-limit RIÊNG (state in-memory không chia sẻ). → Đúng y anti-pattern ở trên. **Khắc phục cho bản memory:** hạ về `--workers 1` (1 process = 1 bộ đếm) → rate-limit kích hoạt đúng (request 11+ trả 429). Muốn giữ nhiều worker/instance thì **bắt buộc** đẩy state sang Redis.
 
 ### Exercise 5.4 — Load balancing
 
@@ -242,6 +245,109 @@ docker compose up --build --scale agent=3
 - Nguyên tắc test (`test_stateless.py` của lab): tạo conversation → kill 1 instance ngẫu nhiên → gọi tiếp → history **vẫn còn** vì nằm ở Redis chứ không phải RAM của instance đã chết.
 
 > **Checkpoint 5 — Trade-off:** stateless đổi lấy thêm 1 hop mạng tới Redis (latency nhỏ) nhưng nhận lại khả năng scale ngang + rolling deploy không mất state. Với hệ nhiều user, đây là đánh đổi gần như luôn đáng.
+
+---
+
+## Part 6: Final Project (60 phút)
+
+> **Sản phẩm cuối:** một AI agent production-ready, gói toàn bộ concept Part 1→5, nằm ở `06-lab-complete/`, **đã deploy thật và đang chạy** tại
+> https://skillful-delight-production-b06b.up.railway.app/
+
+### 6.1 — Cấu trúc dự án
+
+```
+06-lab-complete/
+├── app/
+│   ├── main.py          # FastAPI app: endpoints, middleware, lifespan, SIGTERM
+│   ├── config.py        # Settings 12-Factor đọc từ env
+│   ├── auth.py          # API key auth (hmac.compare_digest chống timing attack)
+│   ├── rate_limiter.py  # Sliding window, 429 + Retry-After
+│   ├── cost_guard.py    # Ngân sách $/user/tháng, 402 khi vượt
+│   ├── conversation.py  # Lịch sử hội thoại theo user
+│   └── store.py         # Lớp store: Redis nếu có REDIS_URL, fallback in-memory
+├── Dockerfile           # Multi-stage (builder + runtime slim, non-root)
+├── docker-compose.yml   # agent (scale=3) + redis + nginx (LB)
+├── nginx/nginx.conf     # reverse proxy + round-robin + failover
+├── requirements.txt
+├── test_security.py     # 8 test bảo mật/chức năng
+└── check_production_ready.py  # 20 check production-readiness
+```
+
+Root repo có thêm `Dockerfile` + `railway.toml` làm **entrypoint deploy** cho Railway (monorepo build từ gốc, chỉ copy `06-lab-complete/app` + `utils` + `requirements.txt`).
+
+### 6.2 — Đối chiếu yêu cầu Final Project (Requirements ✅)
+
+**Functional**
+
+| Yêu cầu | Trạng thái | Nơi triển khai / bằng chứng |
+|---|---|---|
+| Agent trả lời câu hỏi qua REST API | ✅ | `POST /ask` → trả JSON `answer` |
+| Conversation history | ✅ | `conversation.py` + `store.history_*`; test live recall đúng tên |
+| Streaming responses | ⚪ optional | Chưa làm (đề ghi optional); kiến trúc sẵn sàng mở rộng |
+
+**Non-functional**
+
+| Yêu cầu | Trạng thái | Nơi triển khai / bằng chứng |
+|---|---|---|
+| Dockerized — multi-stage build | ✅ | `Dockerfile` (builder→runtime slim, non-root `agent`) |
+| Config từ environment variables | ✅ | `config.py` (`os.getenv`, không hardcode) — 12-Factor III |
+| API key authentication | ✅ | `auth.py`; live test: thiếu key → **401** |
+| Rate limiting 10 req/min/user | ✅ | `rate_limiter.py` (sliding window); live test: req 11+ → **429** |
+| Cost guard $10/month/user | ✅ | `cost_guard.py`; vượt ngân sách → **402** |
+| Health check endpoint | ✅ | `GET /health` → 200 |
+| Readiness check endpoint | ✅ | `GET /ready` → 200 (check store) |
+| Graceful shutdown | ✅ | SIGTERM handler + lifespan drain (`--timeout-graceful-shutdown 30`) |
+| Stateless design (state ở Redis) | ✅ | `store.py` trừu tượng Redis/memory; chứng minh LB+Redis ở local (Part 5.3) |
+| Structured JSON logging | ✅ | hàm `log()` in JSON (ts, event, …) |
+| Deploy Railway/Render | ✅ | Railway, build Dockerfile từ GitHub |
+| Public URL hoạt động | ✅ | https://skillful-delight-production-b06b.up.railway.app/ |
+
+> **Lưu ý thiết kế (chặt chẽ):** bản cloud đang dùng **in-memory store + 1 worker**, là cấu hình **đúng** cho chế độ không-Redis (nhiều worker/instance với in-memory sẽ đếm rate-limit sai — đã kiểm chứng ở Part 5.3). Tính **stateless với Redis** được chứng minh đầy đủ ở stack local (`docker compose --scale agent=3` + Redis + Nginx). Để bản cloud cũng stateless đa-instance: thêm Redis service trên Railway và đặt `REDIS_URL` — code không phải đổi.
+
+### 6.3 — Kết quả Validation (chạy local)
+
+```bash
+cd 06-lab-complete
+PYTHONUTF8=1 PYTHONPATH=. python test_security.py
+PYTHONUTF8=1 python check_production_ready.py
+```
+
+```text
+test_security.py          : 8 passed, 0 failed
+check_production_ready.py : 20/20 checks passed (100%)
+```
+
+`test_security.py` xác nhận: `/health`→200, `/ready`→200, thiếu key→401, đúng key→200, body sai→422, nhớ hội thoại, rate limit→429, `/metrics` cần key→401.
+
+### 6.4 — Kiểm thử trên URL công khai (bằng chứng deploy thật)
+
+```text
+GET  /health            -> 200  {"status":"ok","environment":"production","store":"memory",...}
+GET  /ready             -> 200  {"ready":true,"store":"memory"}
+POST /ask (không key)   -> 401
+POST /ask (đúng key)    -> 200  {"answer":"...","model":"gpt-4o-mini",...}
+POST /ask (body sai)    -> 422
+POST /ask x13 (1 user)  -> 200×10 rồi 429×3   (rate limit 10/phút hoạt động)
+Conversation memory     -> khai báo tên "Alice" → hỏi lại → "Tên của bạn là Alice"
+```
+
+### 6.5 — Tự chấm theo Grading Rubric (đề ra /100)
+
+| Criteria | Điểm | Tự đánh giá | Lý do |
+|---|---|---|---|
+| Functionality | 20 | 20 | `/ask` + history hoạt động đúng trên cả local lẫn cloud |
+| Docker | 15 | 15 | Multi-stage, slim, non-root, HEALTHCHECK, `.dockerignore` |
+| Security | 20 | 20 | API key (hmac) + rate limit (429) + cost guard (402) đều hoạt động |
+| Reliability | 20 | 20 | `/health` + `/ready` + graceful shutdown (SIGTERM drain) |
+| Scalability | 15 | 15 | Stateless qua `store.py`; LB Nginx + Redis chứng minh ở local |
+| Deployment | 10 | 10 | Public URL Railway hoạt động, đã test đủ endpoint |
+| **Total** | **100** | **100** | |
+
+### 6.6 — Quyết định kỹ thuật & đánh đổi (Next Steps)
+
+- **Mock LLM** thay OpenAI thật: chạy offline, không tốn tiền, không cần key (đề cho phép). Bật LLM thật chỉ cần set `OPENAI_API_KEY`.
+- **In-memory + 1 worker trên cloud**: đơn giản, đủ minh chứng tính năng; đánh đổi là không chia sẻ state khi scale → đã ghi rõ đường nâng cấp (Redis + nhiều worker).
+- **Hướng phát triển tiếp:** thêm Redis trên cloud (stateless thật đa-instance) → monitoring Prometheus/Grafana → CI/CD GitHub Actions auto-deploy → Kubernetes.
 
 ---
 

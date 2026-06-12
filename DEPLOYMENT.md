@@ -37,10 +37,10 @@ so Railway can build correctly from the GitHub repository root.
 - Builder: Dockerfile
 - Dockerfile path: `Dockerfile`
 - Root directory: leave empty / repository root
-- Start command:
+- Start command: **để trống** — dùng `CMD` trong Dockerfile. KHÔNG đặt `startCommand` chứa `$PORT` trong `railway.toml` vì Railway không chạy qua shell nên `$PORT` không bung (gây lỗi `'$PORT' is not a valid integer`). Lệnh thực tế (trong Dockerfile, có `sh -c`):
 
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2 --timeout-graceful-shutdown 30
+uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-graceful-shutdown 30
 ```
 
 - Healthcheck path: `/health`
@@ -195,9 +195,7 @@ check_production_ready.py: 20/20 checks passed (100%)
 
 ## Screenshots
 
-Store deployment proof in `screenshots/`:
+Deployment proof in `screenshots/` (2 ảnh):
 
-- `screenshots/dashboard.png` — Railway service running
-- `screenshots/health.png` — public `/health` response
-- `screenshots/rate-limit.png` — rate limit test showing 429
-- `screenshots/env.png` — Railway variables list with secret values hidden
+- `screenshots/railway-dashboard.png` — Railway service ACTIVE / Online (deploy successful)
+- `screenshots/public-url.png` — public URL trả JSON trên trình duyệt

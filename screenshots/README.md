@@ -1,10 +1,9 @@
-# Screenshots
+# Screenshots — Minh chứng deploy
 
-Add final deployment screenshots here after Railway finishes a successful redeploy.
+Hai ảnh minh chứng cho bản deploy thành công trên Railway:
 
-Required proof:
-
-- `dashboard.png` — Railway service running
-- `health.png` — public `/health` returns HTTP 200
-- `rate-limit.png` — repeated `/ask` calls eventually return HTTP 429
-- `env.png` — Railway variables page with secret values hidden
+- `railway-dashboard.png` — Railway service `lab12` ở trạng thái **ACTIVE / Online**
+  (Deployment successful: Initialization → Build → Deploy → Network → Post-deploy đều ✓),
+  domain `skillful-delight-production-b06b.up.railway.app`.
+- `public-url.png` — Mở public URL trên trình duyệt, server trả JSON
+  (`{"app":"Production AI Agent","environment":"production",...}`) → URL hoạt động.

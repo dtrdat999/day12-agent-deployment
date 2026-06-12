@@ -10,7 +10,7 @@
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| Mission answers for Part 1-5 | Done | `MISSION_ANSWERS.md` |
+| Mission answers for Part 1-6 (gồm Final Project) | Done | `MISSION_ANSWERS.md` |
 | Final production source code | Done | `06-lab-complete/` |
 | Root deploy configuration for Railway | Done | `Dockerfile`, `railway.toml` |
 | Docker multi-stage build | Done | `06-lab-complete/Dockerfile`, root `Dockerfile` |
@@ -48,14 +48,14 @@ check_production_ready.py: 20/20 checks passed (100%)
 - [x] `DEPLOYMENT.md` contains the Railway public URL
 - [x] All final source code is in `06-lab-complete/app`
 - [x] Root `Dockerfile` allows Railway to deploy from repository root
-- [x] Root `railway.toml` defines Docker builder, start command, and healthcheck
+- [x] Root `railway.toml` defines Docker builder and healthcheck (start command comes from Dockerfile `CMD`, no `$PORT` in toml)
 - [x] `README.md` has setup instructions
 - [x] No `.env` file is committed
 - [x] No hardcoded production secret is committed
 - [x] Local security/functionality tests pass
 - [x] Production readiness checker passes
 - [x] Public Railway URL verified after latest redeploy
-- [ ] Screenshots added to `screenshots/` after Railway redeploy is green
+- [ ] 2 screenshots added to `screenshots/`: `railway-dashboard.png`, `public-url.png`
 
 ## Public Deployment Self-Test
 
