@@ -4,7 +4,7 @@
 > **Student ID:** 2A202600662  
 > **Date:** 12/06/2026  
 > **Repository:** https://github.com/dtrdat999/day12-agent-deployment  
-> **Public URL:** https://day12-agent-deployment-production-5cb8.up.railway.app/
+> **Public URL:** https://skillful-delight-production-b06b.up.railway.app/
 
 ## Deliverables
 
@@ -54,13 +54,13 @@ check_production_ready.py: 20/20 checks passed (100%)
 - [x] No hardcoded production secret is committed
 - [x] Local security/functionality tests pass
 - [x] Production readiness checker passes
-- [ ] Public Railway URL verified after latest redeploy
+- [x] Public Railway URL verified after latest redeploy
 - [ ] Screenshots added to `screenshots/` after Railway redeploy is green
 
 ## Public Deployment Self-Test
 
 ```bash
-URL="https://day12-agent-deployment-production-5cb8.up.railway.app"
+URL="https://skillful-delight-production-b06b.up.railway.app"
 KEY="$AGENT_API_KEY"
 
 curl "$URL/health"

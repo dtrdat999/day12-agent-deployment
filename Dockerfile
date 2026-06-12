@@ -36,4 +36,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.getenv('PORT', '8000') + '/health')" || exit 1
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2 --timeout-graceful-shutdown 30"]
+# 1 worker khi store = in-memory: rate limit / cost guard giữ state trong RAM của
+# process, nhiều worker sẽ đếm riêng rẽ => 429 không kích hoạt đúng. Muốn scale
+# nhiều worker/instance thì gắn Redis (đặt REDIS_URL) để chia sẻ state — code đã hỗ trợ.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-graceful-shutdown 30"]

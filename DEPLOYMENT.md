@@ -6,7 +6,7 @@
 ## Public URL
 
 ```text
-https://day12-agent-deployment-production-5cb8.up.railway.app/
+https://skillful-delight-production-b06b.up.railway.app/
 ```
 
 ## Platform
@@ -90,14 +90,14 @@ Common 502 causes now covered by the repo:
 Bash:
 
 ```bash
-URL="https://day12-agent-deployment-production-5cb8.up.railway.app"
+URL="https://skillful-delight-production-b06b.up.railway.app"
 KEY="$AGENT_API_KEY"
 ```
 
 PowerShell:
 
 ```powershell
-$URL = "https://day12-agent-deployment-production-5cb8.up.railway.app"
+$URL = "https://skillful-delight-production-b06b.up.railway.app"
 $KEY = $env:AGENT_API_KEY
 ```
 

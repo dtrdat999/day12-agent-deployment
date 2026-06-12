@@ -7,7 +7,7 @@
 | Item | URL |
 |------|-----|
 | GitHub repository | https://github.com/dtrdat999/day12-agent-deployment |
-| Railway public URL | https://day12-agent-deployment-production-5cb8.up.railway.app/ |
+| Railway public URL | https://skillful-delight-production-b06b.up.railway.app/ |
 
 ## What To Grade
 
