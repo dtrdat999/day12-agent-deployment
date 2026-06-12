@@ -1,7 +1,7 @@
 # Deployment Information — Day 12 Agent
 
 > **Student:** Đặng Trần Đạt — **ID:** 2A202600662  
-> **Repo:** https://github.com/dtrdat999/day12-agent-deployment
+> **Repo:** https://github.com/dtrdat999/Day12_DangTranDat_2A202600662
 
 ## Public URL
 
@@ -32,7 +32,7 @@ so Railway can build correctly from the GitHub repository root.
 
 ## Railway Settings
 
-- Repository: `dtrdat999/day12-agent-deployment`
+- Repository: `dtrdat999/Day12_DangTranDat_2A202600662`
 - Branch: `main`
 - Builder: Dockerfile
 - Dockerfile path: `Dockerfile`
@@ -51,7 +51,7 @@ The latest GitHub commit contains the deploy fixes. In Railway, redeploy from
 the latest `main` commit and verify these settings:
 
 1. Open the Railway service → **Settings** → **Source**.
-2. Confirm the connected repo is `dtrdat999/day12-agent-deployment`.
+2. Confirm the connected repo is `dtrdat999/Day12_DangTranDat_2A202600662`.
 3. Confirm the branch is `main`.
 4. Keep **Root Directory** empty, because the root `Dockerfile` is the Railway
    entrypoint for the monorepo.

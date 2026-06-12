@@ -3,7 +3,7 @@
 > **Student Name:** Đặng Trần Đạt
 > **Student ID:** 2A202600662
 > **Khóa:** AICB-P1 · VinUniversity 2026
-> **Repo:** https://github.com/dtrdat999/day12-agent-deployment
+> **Repo:** https://github.com/dtrdat999/Day12_DangTranDat_2A202600662
 
 > Ghi chú: thuật ngữ tiếng Anh được giữ nguyên kèm giải thích tiếng Việt trong ngoặc.
 

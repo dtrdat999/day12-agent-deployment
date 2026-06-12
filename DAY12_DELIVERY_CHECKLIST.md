@@ -3,7 +3,7 @@
 > **Student Name:** Đặng Trần Đạt  
 > **Student ID:** 2A202600662  
 > **Date:** 12/06/2026  
-> **Repository:** https://github.com/dtrdat999/day12-agent-deployment  
+> **Repository:** https://github.com/dtrdat999/Day12_DangTranDat_2A202600662  
 > **Public URL:** https://skillful-delight-production-b06b.up.railway.app/
 
 ## Deliverables
@@ -92,5 +92,5 @@ Expected:
 ## Submission URL
 
 ```text
-https://github.com/dtrdat999/day12-agent-deployment
+https://github.com/dtrdat999/Day12_DangTranDat_2A202600662
 ```
