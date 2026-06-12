@@ -1,16 +1,35 @@
-version: "3.9"
-
+# ============================================================
+# Full production stack: Nginx (LB) -> Agent x3 -> Redis
+# Chạy:   docker compose up --build --scale agent=3
+# Test:   curl http://localhost/health
+# ============================================================
 services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
   agent:
     build: .
-    ports:
-      - "8000:8000"
+    # KHÔNG map cổng cố định cho agent để scale nhiều instance được;
+    # client đi qua Nginx (cổng 80).
+    expose:
+      - "8000"
     environment:
       - ENVIRONMENT=staging
       - APP_NAME=Production AI Agent
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0        # => stateless, dùng chung state
+      - RATE_LIMIT_PER_MINUTE=10
+      - MONTHLY_BUDGET_USD=10.0
     env_file:
-      - .env.local
+      - .env.local            # chứa AGENT_API_KEY thật (KHÔNG commit)
     depends_on:
       redis:
         condition: service_healthy
@@ -21,13 +40,18 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+    stop_grace_period: 30s     # cho graceful shutdown đủ thời gian drain request
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"               # client gọi http://localhost/...
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - agent
+    restart: unless-stopped
+
+volumes:
+  redis-data:

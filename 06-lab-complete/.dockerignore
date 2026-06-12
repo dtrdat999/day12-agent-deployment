@@ -1,11 +1,16 @@
 __pycache__/
 *.pyc
+*.pyo
 .env
 .env.*
 !.env.example
 venv/
 .venv/
 .git/
+.gitignore
 *.md
 tests/
+test_*.py
+.pytest_cache/
 .DS_Store
+screenshots/

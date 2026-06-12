@@ -1,100 +1,66 @@
-# Lab 12 — Complete Production Agent
+# Production AI Agent — Final Project (Day 12)
 
-Kết hợp TẤT CẢ những gì đã học trong 1 project hoàn chỉnh.
+> **Student:** Đặng Trần Đạt — **ID:** 2A202600662
+> Production-ready AI agent: Docker multi-stage, API key auth, rate limiting,
+> cost guard, health/readiness, graceful shutdown, **stateless** (Redis), JSON logging.
 
-## Checklist Deliverable
-
-- [x] Dockerfile (multi-stage, < 500 MB)
-- [x] docker-compose.yml (agent + redis)
-- [x] .dockerignore
-- [x] Health check endpoint (`GET /health`)
-- [x] Readiness endpoint (`GET /ready`)
-- [x] API Key authentication
-- [x] Rate limiting
-- [x] Cost guard
-- [x] Config từ environment variables
-- [x] Structured logging
-- [x] Graceful shutdown
-- [x] Public URL ready (Railway / Render config)
-
----
-
-## Cấu Trúc
+## Cấu trúc
 
 ```
 06-lab-complete/
 ├── app/
-│   ├── main.py         # Entry point — kết hợp tất cả
-│   ├── config.py       # 12-factor config
-│   ├── auth.py         # API Key + JWT
-│   ├── rate_limiter.py # Rate limiting
-│   └── cost_guard.py   # Budget protection
-├── Dockerfile          # Multi-stage, production-ready
-├── docker-compose.yml  # Full stack
-├── railway.toml        # Deploy Railway
-├── render.yaml         # Deploy Render
-├── .env.example        # Template
-├── .dockerignore
-└── requirements.txt
+│   ├── main.py          # FastAPI app: /ask /health /ready /metrics + pipeline
+│   ├── config.py        # Cấu hình từ env (12-Factor)
+│   ├── auth.py          # API Key authentication (hmac compare)
+│   ├── rate_limiter.py  # Sliding window (qua store/Redis)
+│   ├── cost_guard.py    # Ngân sách $10/user/tháng (qua store/Redis)
+│   ├── conversation.py  # Lịch sử hội thoại (stateless)
+│   └── store.py         # Redis client + fallback in-memory
+├── utils/mock_llm.py    # Mock LLM context-aware (không cần API key)
+├── nginx/nginx.conf     # Load balancer
+├── Dockerfile           # Multi-stage, slim, non-root, healthcheck (<500MB)
+├── docker-compose.yml   # nginx + agent(x3) + redis
+├── requirements.txt
+├── .env.example
+├── railway.toml / render.yaml
+├── test_security.py     # Test tự động (local)
+└── check_production_ready.py
 ```
 
----
-
-## Chạy Local
+## Chạy local (in-memory, không cần Redis)
 
 ```bash
-# 1. Setup
-cp .env.example .env
+pip install -r requirements.txt
+cp .env.example .env.local        # sửa AGENT_API_KEY
+export AGENT_API_KEY=secret-key
+PYTHONPATH=. uvicorn app.main:app --reload
+curl http://localhost:8000/health
+```
 
-# 2. Chạy với Docker Compose
-docker compose up
+## Chạy full stack (Docker, stateless + load balanced)
 
-# 3. Test
+```bash
+cp .env.example .env.local        # set AGENT_API_KEY thật
+docker compose up --build --scale agent=3
 curl http://localhost/health
-
-# 4. Lấy API key từ .env, test endpoint
-API_KEY=$(grep AGENT_API_KEY .env | cut -d= -f2)
-curl -H "X-API-Key: $API_KEY" \
-     -X POST http://localhost/ask \
-     -H "Content-Type: application/json" \
-     -d '{"question": "What is deployment?"}'
 ```
 
----
-
-## Deploy Railway (< 5 phút)
+## Test
 
 ```bash
-# Cài Railway CLI
-npm i -g @railway/cli
-
-# Login và deploy
-railway login
-railway init
-railway variables set OPENAI_API_KEY=sk-...
-railway variables set AGENT_API_KEY=your-secret-key
-railway up
-
-# Nhận public URL!
-railway domain
+PYTHONPATH=. python test_security.py   # auth/validation/history/rate-limit
+python check_production_ready.py        # 20/20 (100%)
 ```
 
----
+## API
 
-## Deploy Render
+| Method | Endpoint | Mô tả | Auth |
+|--------|----------|-------|------|
+| POST | `/ask` | Hỏi agent `{user_id, question}` | X-API-Key |
+| GET | `/health` | Liveness | — |
+| GET | `/ready` | Readiness (check Redis) | — |
+| GET | `/metrics` | Metrics | X-API-Key |
+| DELETE | `/history/{user_id}` | Xóa lịch sử | X-API-Key |
+| GET | `/usage/{user_id}` | Chi phí đã dùng | X-API-Key |
 
-1. Push repo lên GitHub
-2. Render Dashboard → New → Blueprint
-3. Connect repo → Render đọc `render.yaml`
-4. Set secrets: `OPENAI_API_KEY`, `AGENT_API_KEY`
-5. Deploy → Nhận URL!
-
----
-
-## Kiểm Tra Production Readiness
-
-```bash
-python check_production_ready.py
-```
-
-Script này kiểm tra tất cả items trong checklist và báo cáo những gì còn thiếu.
+Deploy: xem `../DEPLOYMENT.md`.

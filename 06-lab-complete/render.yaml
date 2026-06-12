@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: ai-agent-production
+    name: day12-agent
     runtime: docker
     region: singapore
-    plan: starter
+    plan: free
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -11,13 +11,24 @@ services:
         value: production
       - key: APP_VERSION
         value: "1.0.0"
-      - key: OPENAI_API_KEY
-        sync: false
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "10"
+      - key: MONTHLY_BUDGET_USD
+        value: "10.0"
       - key: AGENT_API_KEY
-        generateValue: true
+        generateValue: true       # Render tự sinh secret an toàn
       - key: JWT_SECRET
         generateValue: true
-      - key: DAILY_BUDGET_USD
-        value: "5.0"
-      - key: RATE_LIMIT_PER_MINUTE
-        value: "20"
+      - key: OPENAI_API_KEY
+        sync: false               # nhập tay trong dashboard (để trống = mock)
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: day12-redis
+          property: connectionString
+
+  - type: keyvalue
+    name: day12-redis
+    region: singapore
+    plan: free
+    maxmemoryPolicy: allkeys-lru
