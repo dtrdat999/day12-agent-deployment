@@ -36,6 +36,7 @@ so Railway can build correctly from the GitHub repository root.
 - Branch: `main`
 - Builder: Dockerfile
 - Dockerfile path: `Dockerfile`
+- Root directory: leave empty / repository root
 - Start command:
 
 ```bash
@@ -43,6 +44,46 @@ uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2 --timeout-graceful-
 ```
 
 - Healthcheck path: `/health`
+
+## If Railway Still Returns 502
+
+The latest GitHub commit contains the deploy fixes. In Railway, redeploy from
+the latest `main` commit and verify these settings:
+
+1. Open the Railway service → **Settings** → **Source**.
+2. Confirm the connected repo is `dtrdat999/day12-agent-deployment`.
+3. Confirm the branch is `main`.
+4. Keep **Root Directory** empty, because the root `Dockerfile` is the Railway
+   entrypoint for the monorepo.
+5. Confirm **Dockerfile Path** is `Dockerfile`.
+6. Open **Variables** and set at least:
+
+```text
+ENVIRONMENT=production
+AGENT_API_KEY=<your-secret-api-key>
+RATE_LIMIT_PER_MINUTE=10
+MONTHLY_BUDGET_USD=10.0
+```
+
+Optional but recommended:
+
+```text
+REDIS_URL=<railway-redis-url>
+OPENAI_API_KEY=
+```
+
+7. Trigger **Redeploy** on the latest commit.
+
+Common 502 causes now covered by the repo:
+
+- Railway routes to `$PORT`, but Docker CMD listens on `8000` only. Fixed by
+  using `${PORT:-8000}` in both Dockerfiles.
+- Railway builds from repository root while the app lives in `06-lab-complete`.
+  Fixed by root `Dockerfile` and root `railway.toml`.
+- Missing optional `JWT_SECRET` crashes startup. Fixed; the final app uses API
+  key auth and no longer crashes for that optional secret.
+- Missing `AGENT_API_KEY` no longer crashes `/health`; protected endpoints keep
+  returning 401 until a real key is configured.
 
 ## Test Commands
 
