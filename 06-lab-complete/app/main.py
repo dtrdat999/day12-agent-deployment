@@ -97,17 +97,37 @@ async def observability_middleware(request: Request, call_next):
     _state["inflight"] += 1
     try:
         response = await call_next(request)
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
         _state["errors"] += 1
-        raise
+        try:
+            log("request_error", method=request.method, path=request.url.path,
+                error=str(exc))
+        except Exception:  # noqa: BLE001
+            pass
+        return JSONResponse(status_code=500, content={
+            "error": "Internal server error",
+            "message": "Đã xảy ra lỗi không mong muốn.",
+        })
     finally:
         _state["inflight"] -= 1
-    # Security headers
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    log("request", method=request.method, path=request.url.path,
-        status=response.status_code, ms=round((time.time() - start) * 1000, 1))
+
+    try:
+        # Security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        log("request", method=request.method, path=request.url.path,
+            status=response.status_code, ms=round((time.time() - start) * 1000, 1))
+    except Exception as exc:  # noqa: BLE001
+        # Observability must never break a user request.
+        try:
+            logger.warning(json.dumps({
+                "event": "observability_error",
+                "error": str(exc),
+                "path": request.url.path,
+            }, ensure_ascii=True))
+        except Exception:  # noqa: BLE001
+            pass
     return response
 
 
