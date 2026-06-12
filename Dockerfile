@@ -13,5 +13,5 @@ ENV PYTHONPATH=/app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# KHÔNG DÙNG EXPOSE 8000 - để Railway tự quyết định PORT và map đúng
+EXPOSE 8000
 CMD ["python", "start.py"]
