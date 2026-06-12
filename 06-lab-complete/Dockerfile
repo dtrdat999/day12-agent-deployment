@@ -42,7 +42,7 @@ EXPOSE 8000
 
 # Healthcheck: Docker tự đánh dấu unhealthy/restart nếu /health fail.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.getenv('PORT', '8000') + '/health')" || exit 1
 
 # 2 worker; uvicorn xử lý SIGTERM -> graceful shutdown (drain request đang chạy).
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--timeout-graceful-shutdown", "30"]

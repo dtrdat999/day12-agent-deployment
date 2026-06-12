@@ -1,218 +1,96 @@
-#  Delivery Checklist — Day 12 Lab Submission
+# Day 12 Delivery Checklist
 
 > **Student Name:** Đặng Trần Đạt  
 > **Student ID:** 2A202600662  
-> **Date:** 12/06/2026
+> **Date:** 12/06/2026  
+> **Repository:** https://github.com/dtrdat999/day12-agent-deployment  
+> **Public URL:** https://day12-agent-deployment-production-5cb8.up.railway.app/
 
----
+## Deliverables
 
-##  Submission Requirements
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| Mission answers for Part 1-5 | Done | `MISSION_ANSWERS.md` |
+| Final production source code | Done | `06-lab-complete/` |
+| Root deploy configuration for Railway | Done | `Dockerfile`, `railway.toml` |
+| Docker multi-stage build | Done | `06-lab-complete/Dockerfile`, root `Dockerfile` |
+| API key authentication | Done | `06-lab-complete/app/auth.py` |
+| Rate limiting, 10 req/min/user | Done | `06-lab-complete/app/rate_limiter.py` |
+| Cost guard, $10/user/month | Done | `06-lab-complete/app/cost_guard.py` |
+| Health and readiness checks | Done | `/health`, `/ready` in `06-lab-complete/app/main.py` |
+| Graceful shutdown | Done | SIGTERM handler and lifespan drain in `06-lab-complete/app/main.py` |
+| Stateless design | Done | Redis-backed store in `06-lab-complete/app/store.py` |
+| Structured JSON logging | Done | `log()` helper in `06-lab-complete/app/main.py` |
+| Deployment guide | Done | `DEPLOYMENT.md` |
+| Submission summary | Done | `SUBMISSION.md` |
 
-Submit a **GitHub repository** containing:
+## Local Test Results
 
-### 1. Mission Answers (40 points)
+Commands:
 
-Create a file `MISSION_ANSWERS.md` with your answers to all exercises:
-
-```markdown
-# Day 12 Lab - Mission Answers
-
-## Part 1: Localhost vs Production
-
-### Exercise 1.1: Anti-patterns found
-1. [Your answer]
-2. [Your answer]
-...
-
-### Exercise 1.3: Comparison table
-| Feature | Develop | Production | Why Important? |
-|---------|---------|------------|----------------|
-| Config  | ...     | ...        | ...            |
-...
-
-## Part 2: Docker
-
-### Exercise 2.1: Dockerfile questions
-1. Base image: [Your answer]
-2. Working directory: [Your answer]
-...
-
-### Exercise 2.3: Image size comparison
-- Develop: [X] MB
-- Production: [Y] MB
-- Difference: [Z]%
-
-## Part 3: Cloud Deployment
-
-### Exercise 3.1: Railway deployment
-- URL: https://your-app.railway.app
-- Screenshot: [Link to screenshot in repo]
-
-## Part 4: API Security
-
-### Exercise 4.1-4.3: Test results
-[Paste your test outputs]
-
-### Exercise 4.4: Cost guard implementation
-[Explain your approach]
-
-## Part 5: Scaling & Reliability
-
-### Exercise 5.1-5.5: Implementation notes
-[Your explanations and test results]
-```
-
----
-
-### 2. Full Source Code - Lab 06 Complete (60 points)
-
-Your final production-ready agent with all files:
-
-```
-your-repo/
-├── app/
-│   ├── main.py              # Main application
-│   ├── config.py            # Configuration
-│   ├── auth.py              # Authentication
-│   ├── rate_limiter.py      # Rate limiting
-│   └── cost_guard.py        # Cost protection
-├── utils/
-│   └── mock_llm.py          # Mock LLM (provided)
-├── Dockerfile               # Multi-stage build
-├── docker-compose.yml       # Full stack
-├── requirements.txt         # Dependencies
-├── .env.example             # Environment template
-├── .dockerignore            # Docker ignore
-├── railway.toml             # Railway config (or render.yaml)
-└── README.md                # Setup instructions
-```
-
-**Requirements:**
--  All code runs without errors
--  Multi-stage Dockerfile (image < 500 MB)
--  API key authentication
--  Rate limiting (10 req/min)
--  Cost guard ($10/month)
--  Health + readiness checks
--  Graceful shutdown
--  Stateless design (Redis)
--  No hardcoded secrets
-
----
-
-### 3. Service Domain Link
-
-Create a file `DEPLOYMENT.md` with your deployed service information:
-
-```markdown
-# Deployment Information
-
-## Public URL
-https://your-agent.railway.app
-
-## Platform
-Railway / Render / Cloud Run
-
-## Test Commands
-
-### Health Check
 ```bash
-curl https://your-agent.railway.app/health
-# Expected: {"status": "ok"}
+cd 06-lab-complete
+PYTHONUTF8=1 PYTHONPATH=. python test_security.py
+PYTHONUTF8=1 python check_production_ready.py
 ```
 
-### API Test (with authentication)
-```bash
-curl -X POST https://your-agent.railway.app/ask \
-  -H "X-API-Key: YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "test", "question": "Hello"}'
+Results:
+
+```text
+test_security.py: 8 passed, 0 failed
+check_production_ready.py: 20/20 checks passed (100%)
 ```
 
-## Environment Variables Set
-- PORT
-- REDIS_URL
-- AGENT_API_KEY
-- LOG_LEVEL
+## Pre-Submission Checklist
 
-## Screenshots
-- [Deployment dashboard](screenshots/dashboard.png)
-- [Service running](screenshots/running.png)
-- [Test results](screenshots/test.png)
-```
-
-##  Pre-Submission Checklist
-
-- [ ] Repository is public (or instructor has access)
+- [x] Repository is pushed to GitHub
 - [x] `MISSION_ANSWERS.md` completed with all exercises
-- [ ] `DEPLOYMENT.md` has working public URL
-- [x] All source code in `app/` directory (06-lab-complete/app)
-- [x] `README.md` has clear setup instructions
-- [x] No `.env` file committed (only `.env.example`)
-- [x] No hardcoded secrets in code
-- [ ] Public URL is accessible and working
-- [ ] Screenshots included in `screenshots/` folder
-- [x] Repository has clear commit history
+- [x] `DEPLOYMENT.md` contains the Railway public URL
+- [x] All final source code is in `06-lab-complete/app`
+- [x] Root `Dockerfile` allows Railway to deploy from repository root
+- [x] Root `railway.toml` defines Docker builder, start command, and healthcheck
+- [x] `README.md` has setup instructions
+- [x] No `.env` file is committed
+- [x] No hardcoded production secret is committed
+- [x] Local security/functionality tests pass
+- [x] Production readiness checker passes
+- [ ] Public Railway URL verified after latest redeploy
+- [ ] Screenshots added to `screenshots/` after Railway redeploy is green
 
----
-
-##  Self-Test
-
-Before submitting, verify your deployment:
+## Public Deployment Self-Test
 
 ```bash
-# 1. Health check
-curl https://your-app.railway.app/health
+URL="https://day12-agent-deployment-production-5cb8.up.railway.app"
+KEY="$AGENT_API_KEY"
 
-# 2. Authentication required
-curl https://your-app.railway.app/ask
-# Should return 401
+curl "$URL/health"
 
-# 3. With API key works
-curl -H "X-API-Key: YOUR_KEY" https://your-app.railway.app/ask \
-  -X POST -d '{"user_id":"test","question":"Hello"}'
-# Should return 200
+curl -i -X POST "$URL/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Hello"}'
 
-# 4. Rate limiting
-for i in {1..15}; do 
-  curl -H "X-API-Key: YOUR_KEY" https://your-app.railway.app/ask \
-    -X POST -d '{"user_id":"test","question":"test"}'; 
+curl -X POST "$URL/ask" \
+  -H "X-API-Key: $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"test","question":"Hello"}'
+
+for i in $(seq 1 15); do
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST "$URL/ask" \
+    -H "X-API-Key: $KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"user_id":"rl","question":"test"}'
 done
-# Should eventually return 429
 ```
 
----
+Expected:
 
-##  Submission
+- `/health` returns 200
+- `/ask` without `X-API-Key` returns 401
+- `/ask` with valid key returns 200
+- repeated requests eventually return 429
 
-**Submit your GitHub repository URL:**
+## Submission URL
 
+```text
+https://github.com/dtrdat999/day12-agent-deployment
 ```
-https://github.com/your-username/day12-agent-deployment
-```
-
-**Deadline:** 17/4/2026
-
----
-
-##  Quick Tips
-
-1.  Test your public URL from a different device
-2.  Make sure repository is public or instructor has access
-3.  Include screenshots of working deployment
-4.  Write clear commit messages
-5.  Test all commands in DEPLOYMENT.md work
-6.  No secrets in code or commit history
-
----
-
-##  Need Help?
-
-- Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-- Review [CODE_LAB.md](CODE_LAB.md)
-- Ask in office hours
-- Post in discussion forum
-
----
-
-**Good luck! **

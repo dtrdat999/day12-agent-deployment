@@ -36,3 +36,20 @@ Thumbs.db
 *.md
 tests/
 docs/
+
+# Lab source not needed by the Railway production image.
+# The root Dockerfile only copies 06-lab-complete/app, utils, and requirements.
+01-localhost-vs-production/
+02-docker/
+03-cloud-deployment/
+04-api-gateway/
+05-scaling-reliability/
+Dockerfile_examples/
+utils/
+06-lab-complete/nginx/
+06-lab-complete/*.md
+06-lab-complete/docker-compose.yml
+06-lab-complete/render.yaml
+06-lab-complete/railway.toml
+06-lab-complete/test_security.py
+06-lab-complete/check_production_ready.py

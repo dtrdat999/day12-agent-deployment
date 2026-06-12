@@ -1,147 +1,162 @@
 # Deployment Information — Day 12 Agent
 
-> **Student:** Đặng Trần Đạt — **ID:** 2A202600662
+> **Student:** Đặng Trần Đạt — **ID:** 2A202600662  
 > **Repo:** https://github.com/dtrdat999/day12-agent-deployment
-
----
 
 ## Public URL
 
-> ⚠️ ĐIỀN URL THẬT SAU KHI DEPLOY (xem hướng dẫn bên dưới):
-
-```
-https://day12-agent-<your>.onrender.com
+```text
+https://day12-agent-deployment-production-5cb8.up.railway.app/
 ```
 
 ## Platform
 
-Render (Docker runtime + Key Value/Redis miễn phí) — cấu hình tại `06-lab-complete/render.yaml`.
-(Railway cũng đã cấu hình sẵn tại `06-lab-complete/railway.toml`.)
+Railway, Docker runtime.
 
----
+The repository is a lab monorepo. The deployable production agent lives in
+`06-lab-complete/`, while the root `Dockerfile` and `railway.toml` are provided
+so Railway can build correctly from the GitHub repository root.
 
-## Cách deploy (Render — khuyến nghị vì có Redis free → stateless thật)
+## Environment Variables
 
-1. Push repo lên GitHub (đã có).
-2. Vào https://render.com → **New** → **Blueprint** → chọn repo này.
-3. Render đọc `06-lab-complete/render.yaml`:
-   - Tạo service web `day12-agent` (Docker) + tự sinh `AGENT_API_KEY`, `JWT_SECRET`.
-   - Tạo Key Value `day12-redis` và inject `REDIS_URL` vào agent → **stateless**.
-   - **Lưu ý:** nếu Blueprint không tự nhận root path, set **Root Directory = `06-lab-complete`** trong Settings.
-4. Mở service → tab **Environment** → copy giá trị `AGENT_API_KEY` (đã auto-generate) để test.
-5. Đợi build xong → lấy URL public ở đầu trang → điền vào mục **Public URL** trên.
-
-### Hoặc Railway
-
-```bash
-cd 06-lab-complete
-railway init
-railway add            # thêm Redis plugin -> tự set REDIS_URL
-railway variables set AGENT_API_KEY=<khóa-mạnh> ENVIRONMENT=production \
-                      RATE_LIMIT_PER_MINUTE=10 MONTHLY_BUDGET_USD=10.0
-railway up
-railway domain         # lấy public URL
-```
-
----
-
-## Environment Variables đã set
-
-| Biến | Ý nghĩa |
-|------|---------|
-| `PORT` | Cloud tự inject; app đọc từ env |
+| Variable | Value / note |
+|----------|--------------|
+| `PORT` | Injected automatically by Railway |
 | `ENVIRONMENT` | `production` |
-| `AGENT_API_KEY` | Khóa xác thực (auto-generate / set tay) |
-| `JWT_SECRET` | Khóa ký JWT |
-| `REDIS_URL` | Kết nối Redis → stateless |
+| `AGENT_API_KEY` | Set in Railway Variables, keep secret |
+| `JWT_SECRET` | Set in Railway Variables, keep secret |
+| `REDIS_URL` | Railway Redis/Key Value URL, recommended for stateless scaling |
 | `RATE_LIMIT_PER_MINUTE` | `10` |
 | `MONTHLY_BUDGET_USD` | `10.0` |
-| `OPENAI_API_KEY` | (để trống = dùng mock LLM) |
+| `OPENAI_API_KEY` | Optional; empty means the app uses mock LLM offline |
 
----
+## Railway Settings
+
+- Repository: `dtrdat999/day12-agent-deployment`
+- Branch: `main`
+- Builder: Dockerfile
+- Dockerfile path: `Dockerfile`
+- Start command:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2 --timeout-graceful-shutdown 30
+```
+
+- Healthcheck path: `/health`
 
 ## Test Commands
 
-Đặt biến cho gọn (thay URL + KEY thật):
+Bash:
 
 ```bash
-URL="https://day12-agent-<your>.onrender.com"
-KEY="<AGENT_API_KEY-từ-dashboard>"
+URL="https://day12-agent-deployment-production-5cb8.up.railway.app"
+KEY="$AGENT_API_KEY"
 ```
 
-### 1) Health check
-```bash
-curl $URL/health
-# Kỳ vọng: {"status":"ok", "store":"redis", ...}
+PowerShell:
+
+```powershell
+$URL = "https://day12-agent-deployment-production-5cb8.up.railway.app"
+$KEY = $env:AGENT_API_KEY
 ```
 
-### 2) Readiness check
+### 1. Health Check
+
 ```bash
-curl $URL/ready
-# Kỳ vọng: {"ready":true,"store":"redis"}  (200)
+curl "$URL/health"
 ```
 
-### 3) Auth bắt buộc (không key → 401)
+Expected: HTTP 200 and JSON containing `"status":"ok"`.
+
+### 2. Readiness Check
+
 ```bash
-curl -i -X POST $URL/ask -H "Content-Type: application/json" \
+curl "$URL/ready"
+```
+
+Expected: HTTP 200 and JSON containing `"ready":true`.
+
+### 3. Authentication Required
+
+```bash
+curl -i -X POST "$URL/ask" \
+  -H "Content-Type: application/json" \
   -d '{"question":"Hello"}'
-# Kỳ vọng: HTTP/1.1 401 Unauthorized
 ```
 
-### 4) Có key → 200
+Expected: HTTP 401 because `X-API-Key` is missing.
+
+### 4. Authenticated Agent Request
+
 ```bash
-curl -X POST $URL/ask \
-  -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+curl -X POST "$URL/ask" \
+  -H "X-API-Key: $KEY" \
+  -H "Content-Type: application/json" \
   -d '{"user_id":"test","question":"Hello"}'
-# Kỳ vọng: 200 + JSON answer
 ```
 
-### 5) Conversation history (nhớ ngữ cảnh)
+Expected: HTTP 200 with a JSON answer.
+
+### 5. Conversation History
+
 ```bash
-curl -X POST $URL/ask -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+curl -X POST "$URL/ask" \
+  -H "X-API-Key: $KEY" \
+  -H "Content-Type: application/json" \
   -d '{"user_id":"alice","question":"My name is Alice"}'
 
-curl -X POST $URL/ask -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+curl -X POST "$URL/ask" \
+  -H "X-API-Key: $KEY" \
+  -H "Content-Type: application/json" \
   -d '{"user_id":"alice","question":"What is my name?"}'
-# Kỳ vọng: answer có chứa "Alice"
 ```
 
-### 6) Rate limiting (→ 429 sau 10 req/phút)
+Expected: the second answer contains `Alice`.
+
+### 6. Rate Limiting
+
 ```bash
 for i in $(seq 1 15); do
-  curl -s -o /dev/null -w "%{http_code}\n" -X POST $URL/ask \
-    -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST "$URL/ask" \
+    -H "X-API-Key: $KEY" \
+    -H "Content-Type: application/json" \
     -d '{"user_id":"rl","question":"test"}'
 done
-# Kỳ vọng: 200 x10 rồi 429 x5
 ```
 
-### 7) Validation (body sai → 422)
+Expected: requests eventually return HTTP 429.
+
+### 7. Validation
+
 ```bash
-curl -i -X POST $URL/ask -H "X-API-Key: $KEY" \
-  -H "Content-Type: application/json" -d '{"invalid":"data"}'
-# Kỳ vọng: HTTP/1.1 422
+curl -i -X POST "$URL/ask" \
+  -H "X-API-Key: $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"invalid":"data"}'
 ```
 
----
+Expected: HTTP 422.
 
-## Screenshots
-
-Đặt ảnh trong thư mục `screenshots/`:
-
-- `screenshots/dashboard.png` — dashboard platform (service running)
-- `screenshots/health.png` — kết quả `curl /health`
-- `screenshots/rate-limit.png` — chuỗi 200 → 429
-- `screenshots/env.png` — danh sách environment variables (che giá trị secret)
-
-> Cách chụp nhanh: chạy block "Test Commands" trong terminal và chụp output; chụp trang service + tab Environment trên Render/Railway.
-
----
-
-## Self-test trước khi nộp
+## Local Verification
 
 ```bash
 cd 06-lab-complete
-PYTHONPATH=. python test_security.py          # test local toàn bộ security/reliability
-python check_production_ready.py               # phải 100%
+PYTHONUTF8=1 PYTHONPATH=. python test_security.py
+PYTHONUTF8=1 python check_production_ready.py
 ```
+
+Latest local results:
+
+```text
+test_security.py: 8 passed, 0 failed
+check_production_ready.py: 20/20 checks passed (100%)
+```
+
+## Screenshots
+
+Store deployment proof in `screenshots/`:
+
+- `screenshots/dashboard.png` — Railway service running
+- `screenshots/health.png` — public `/health` response
+- `screenshots/rate-limit.png` — rate limit test showing 429
+- `screenshots/env.png` — Railway variables list with secret values hidden

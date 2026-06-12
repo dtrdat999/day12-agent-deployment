@@ -131,7 +131,7 @@ railway variables set MONTHLY_BUDGET_USD=10.0
 railway up
 railway domain     # lấy public URL
 ```
-- **Public URL:** _(điền sau khi deploy — xem `DEPLOYMENT.md`)_
+- **Public URL:** https://day12-agent-deployment-production-5cb8.up.railway.app/
 - Railway tự inject `$PORT`; `railway.toml` đã cấu hình `startCommand` đọc `$PORT` + `healthcheckPath=/health`.
 
 ### Exercise 3.2 — So sánh `render.yaml` vs `railway.toml`
