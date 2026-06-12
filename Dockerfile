@@ -8,7 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/*
 
 COPY 06-lab-complete/requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 
 FROM python:3.11-slim AS runtime
@@ -17,14 +19,14 @@ RUN groupadd -r agent && useradd -r -g agent -d /app agent
 
 WORKDIR /app
 
-COPY --from=builder /root/.local /home/agent/.local
+COPY --from=builder /opt/venv /opt/venv
 COPY 06-lab-complete/app/ ./app/
 COPY 06-lab-complete/utils/ ./utils/
 
-RUN chown -R agent:agent /app
+RUN chown -R agent:agent /app /opt/venv
 USER agent
 
-ENV PATH=/home/agent/.local/bin:$PATH \
+ENV PATH=/opt/venv/bin:$PATH \
     PYTHONPATH=/app \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
