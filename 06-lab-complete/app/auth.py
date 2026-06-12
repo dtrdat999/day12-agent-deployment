@@ -20,7 +20,11 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 def verify_api_key(api_key: str = Security(api_key_header)) -> str:
     """FastAPI dependency: trả về API key hợp lệ, hoặc raise 401."""
-    if not api_key or not hmac.compare_digest(api_key, settings.agent_api_key):
+    if (
+        not settings.agent_api_key
+        or not api_key
+        or not hmac.compare_digest(api_key, settings.agent_api_key)
+    ):
         raise HTTPException(
             status_code=401,
             detail="Invalid or missing API key. Header bắt buộc: X-API-Key: <key>",
